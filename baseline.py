@@ -187,22 +187,31 @@ class LocalDataProcessor:
         self.create_submission_zip()
 
     def create_submission_zip(self):
-        """Create final submission zip file"""
-        import shutil
-        
-        # Create api_key.txt
-        api_key_path = os.path.join(OUTPUT_DIR, "api_key.txt")
-        with open(api_key_path, 'w') as f:
-            f.write("YOUR_GEMINI_API_KEY")  # Replace with actual API key
-        
-        # Create zip
-        shutil.make_archive(
-            os.path.join(OUTPUT_DIR, "pred"),
-            'zip',
-            root_dir=OUTPUT_DIR,
-            base_dir=["submission.json", "api_key.txt"]
-        )
-        print(f"Submission zip created at {os.path.join(OUTPUT_DIR, 'pred.zip')}")
+            """Create final submission zip file"""
+            import shutil
+            import os
+            
+            # Create api_key.txt
+            api_key_path = os.path.join(OUTPUT_DIR, "api_key.txt")
+            with open(api_key_path, 'w') as f:
+                f.write("YOUR_GEMINI_API_KEY")  # Replace with actual API key
+
+            # Create temporary directory for zip contents
+            import tempfile
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Copy files to temporary directory
+                shutil.copy2(os.path.join(OUTPUT_DIR, "submission.json"), temp_dir)
+                shutil.copy2(api_key_path, temp_dir)
+                
+                # Create zip from temporary directory
+                zip_path = os.path.join(OUTPUT_DIR, "pred")
+                shutil.make_archive(
+                    zip_path,
+                    'zip',
+                    temp_dir
+                )
+            
+            print(f"Submission zip created at {zip_path}.zip")
 
 def main():
     try:

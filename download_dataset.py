@@ -43,7 +43,7 @@ def download_dataset():
                     general_data.append(annotation)
                 elif "region" in item['id'].lower():
                     region_data.append(annotation)
-                elif "driving" in item['id'].lower():
+                elif "suggestion" in item['id'].lower():
                     driving_data.append(annotation)
             
             # Save annotations with correct split name
