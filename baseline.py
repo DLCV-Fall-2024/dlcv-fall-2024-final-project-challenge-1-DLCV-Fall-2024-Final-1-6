@@ -22,7 +22,6 @@ class LocalDataProcessor:
     def __init__(self):
         self.setup_model()
         os.makedirs(OUTPUT_DIR, exist_ok=True)
-        # Load existing results if any
         self.all_results = self.load_existing_results()
 
     def load_existing_results(self):
@@ -36,10 +35,8 @@ class LocalDataProcessor:
     def save_results(self, intermediate=True):
         """Save current results to file"""
         if intermediate:
-            # Save to intermediate file
             save_path = os.path.join(OUTPUT_DIR, "submission_intermediate.json")
         else:
-            # Save to final submission file
             save_path = os.path.join(OUTPUT_DIR, "submission.json")
         
         with open(save_path, 'w') as f:
@@ -110,7 +107,8 @@ class LocalDataProcessor:
         """Process a single example"""
         # Skip if already processed
         if example['id'] in self.all_results:
-            return self.all_results[example['id']]
+            print(f"Skipping already processed example {example['id']}")
+            return {"question_id": example['id'], "answer": self.all_results[example['id']]}
 
         try:
             image = Image.open(example['image'])
@@ -126,7 +124,7 @@ class LocalDataProcessor:
             inputs = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v 
                      for k, v in inputs.items()}
             
-            with torch.no_grad(), torch.cuda.amp.autocast():
+            with torch.no_grad(), torch.amp.autocast('cuda'):  # Fixed deprecated autocast
                 output = self.model.generate(
                     **inputs,
                     max_new_tokens=MAX_TOKEN,
@@ -150,39 +148,42 @@ class LocalDataProcessor:
             print(f"Error processing example {example['id']}: {e}")
             return None
 
-    def process_task(self, task_type):
-        """Process all examples for a specific task"""
-        print(f"\nProcessing {task_type} task...")
-        
-        # Load task data
-        data_file = os.path.join(DATA_ROOT, "annotations", f"test_{task_type}_perception.jsonl")
-        with open(data_file, 'r') as f:
-            examples = [json.loads(line) for line in f]
-        
-        # Process each example
-        for i, example in enumerate(tqdm(examples)):
-            result = self.process_single_example(example, task_type.split("_")[0])
-            if result:
-                self.all_results[result["question_id"]] = result["answer"]
-                
-                # Save intermediate results every 5 examples
-                if i % 5 == 0:
-                    self.save_results(intermediate=True)
-
-        # Save results after completing task
-        self.save_results(intermediate=True)
-        print(f"Completed {task_type} task, processed {len(examples)} examples")
-
     def process_all_tasks(self):
-        """Process all tasks and create submission file"""
-        for task in ["general", "region", "driving"]:
-            self.process_task(task)
-            print(f"Completed {task} task")
+        """Process all tasks with correct filenames"""
+        # Task mapping to correct filenames
+        tasks = [
+            ("general", "general_perception"),
+            ("region", "region_perception"),
+            ("driving", "driving_suggestion")
+        ]
         
-        # Save final results
+        for task_type, filename in tasks:
+            print(f"\nProcessing {task_type} task...")
+            data_file = os.path.join(DATA_ROOT, "annotations", f"test_{filename}.jsonl")
+            
+            try:
+                with open(data_file, 'r') as f:
+                    examples = [json.loads(line) for line in f]
+            except FileNotFoundError:
+                print(f"Error: Could not find file {data_file}")
+                continue
+                
+            # Process each example
+            for i, example in enumerate(tqdm(examples)):
+                result = self.process_single_example(example, task_type)
+                if result:
+                    self.all_results[result["question_id"]] = result["answer"]
+                    
+                    # Save intermediate results every 5 examples
+                    if i % 5 == 0:
+                        self.save_results(intermediate=True)
+                        
+            # Save results after completing task
+            self.save_results(intermediate=True)
+            print(f"Completed {task_type} task, processed {len(examples)} examples")
+            
+        # Save final results and create submission
         self.save_results(intermediate=False)
-        
-        # Create submission zip
         self.create_submission_zip()
 
     def create_submission_zip(self):
