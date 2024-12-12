@@ -1,6 +1,38 @@
-numpy
-pycocoevalcap
-datasets
-huggingface_hub
-transformers==4.46.3
-accelerate==0.26.0
+# Core dependencies
+numpy>=1.24.0
+pandas>=2.0.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+jupyter>=1.0.0
+ipykernel>=6.0.0
+scipy>=1.10.0
+plotly>=5.13.0
+
+# Deep learning frameworks
+torch>=2.0.0
+tensorflow>=2.13.0
+
+# Hugging Face libraries
+transformers>=4.46.3  # Keeping the more specific version from second file
+datasets>=2.16.0
+peft>=0.7.0
+huggingface_hub  # Added from second file
+pycocoevalcap  # Added from second file
+
+# Training utilities
+lightning>=2.1.0
+wandb>=0.16.0
+nltk>=3.8.0
+accelerate==0.26.0  # Using exact version from second file
+bitsandbytes>=0.41.0
+
+# Image processing
+Pillow>=10.0.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# API interaction
+requests>=2.31.0
+python-dotenv>=1.0.0
