@@ -176,9 +176,8 @@ class LocalDataProcessor:
         ]
 
         transform = transforms.Compose([
-            # transforms.Resize((224, 224)),
+            transforms.Resize((720, 1280)),  # Resize all images to a fixed size
             transforms.ToTensor(),
-            # transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
         ])
 
         # Load training datasets
