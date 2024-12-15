@@ -29,13 +29,12 @@ torch.cuda.set_per_process_memory_fraction(0.95)
 torch.backends.cuda.matmul.allow_tf32 = True
 
 class DrivingDataset(Dataset):
-    def __init__(self, annotations_file, root_dir, task_type, transform=None):
+    def __init__(self, annotations_file, root_dir, task_type):
         """
         Initializes the dataset by loading the annotations.
         """
         self.root_dir = root_dir
         self.task_type = task_type
-        self.transform = transform
         self.samples = []
         
         try:
@@ -61,8 +60,6 @@ class DrivingDataset(Dataset):
             image_path = os.path.join(os.path.dirname(self.root_dir), image_path)
 
         image = Image.open(image_path).convert("RGB")
-        if self.transform:
-            image = self.transform(image)
         
         conversations = sample['conversations']
         
@@ -210,16 +207,11 @@ class LocalDataProcessor:
             ("driving", "val_driving_suggestion.jsonl")
         ]
 
-        transform = transforms.Compose([
-            # transforms.Resize((720, 1280)),  # Resize all images to a fixed size
-            # transforms.ToTensor(),
-        ])
-
         # Load training datasets
         train_datasets = []
         for task_type, filename in train_tasks:
             annotations_file = os.path.join(data_root, "annotations", filename)
-            dataset = DrivingDataset(annotations_file, data_root, task_type, transform=transform)
+            dataset = DrivingDataset(annotations_file, data_root, task_type)
             train_datasets.append(dataset)
 
         # Combine all training datasets
@@ -239,7 +231,7 @@ class LocalDataProcessor:
         val_datasets = []
         for task_type, filename in val_tasks:
             annotations_file = os.path.join(data_root, "annotations", filename)
-            dataset = DrivingDataset(annotations_file, data_root, task_type, transform=transform)
+            dataset = DrivingDataset(annotations_file, data_root, task_type)
             val_datasets.append(dataset)
 
         # Combine all validation datasets
