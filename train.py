@@ -8,6 +8,7 @@ import json
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import time
+import argparse
 
 # Configuration
 MAX_TOKEN = 1000
@@ -332,6 +333,15 @@ class LocalDataProcessor:
 
 def main():
     try:
+        # Add argument parsing
+        parser = argparse.ArgumentParser(description='Train the model with a specified data root directory')
+        parser.add_argument('--data_root', type=str, default=DATA_ROOT, help='Path to the data root directory')
+        args = parser.parse_args()
+
+        # Update the DATA_ROOT variable with the provided argument
+        global DATA_ROOT
+        DATA_ROOT = args.data_root
+
         processor = LocalDataProcessor()
         processor.train_model()
         # Optionally, after training, you can perform inference or other tasks
