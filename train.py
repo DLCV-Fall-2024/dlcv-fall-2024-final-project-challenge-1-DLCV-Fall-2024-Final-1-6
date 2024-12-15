@@ -174,7 +174,7 @@ class LocalDataProcessor:
                 images=images,
                 return_tensors="pt",
                 padding=True
-            ).to(self.device)
+            )
             
             # Tokenize labels
             label_tokens = self.processor.tokenizer(
@@ -183,7 +183,7 @@ class LocalDataProcessor:
                 padding=True,
                 truncation=True,
                 max_length=MAX_TOKEN
-            ).input_ids.to(self.device)
+            ).input_ids
             
             inputs['labels'] = label_tokens
             
@@ -348,7 +348,7 @@ class LocalDataProcessor:
                         images=images,
                         return_tensors="pt",
                         padding=True
-                    )
+                    ).to(self.device)
 
                     # Tokenize labels
                     labels_tokenized = self.processor.tokenizer(
@@ -357,7 +357,7 @@ class LocalDataProcessor:
                         padding=True,
                         truncation=True,
                         max_length=MAX_TOKEN
-                    ).input_ids
+                    ).input_ids.to(self.device)
 
                     inputs['labels'] = labels_tokenized
 
