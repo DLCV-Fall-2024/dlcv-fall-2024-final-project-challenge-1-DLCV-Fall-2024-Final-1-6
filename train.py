@@ -1,4 +1,5 @@
 import torch
+from torchvision import transforms
 from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration, AdamW, get_linear_schedule_with_warmup
 from peft import get_peft_model, LoraConfig
 import gc
