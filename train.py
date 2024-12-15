@@ -187,6 +187,7 @@ class LocalDataProcessor:
             inputs['labels'] = label_tokens
             
             return inputs
+
         except Exception as e:
             print(f"Error in collate_fn: {e}")
             raise
@@ -292,7 +293,7 @@ class LocalDataProcessor:
 
                     # inputs['labels'] = labels_tokenized
 
-                    outputs = self.model(**inputs)
+                    outputs = self.model(**batch)
                     loss = outputs.loss
                     loss.backward()
 
