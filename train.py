@@ -52,6 +52,7 @@ class DrivingDataset(Dataset):
         """
         sample = self.samples[idx]
         image_path = sample['image']
+        image_path = os.path.join(self.root_dir, image_path)
         image = Image.open(image_path).convert("RGB")
         conversations = sample['conversations']
         
