@@ -127,6 +127,7 @@ class LocalDataProcessor:
 
             # LoRA Configuration
             lora_config = LoraConfig(
+                target_modules=["q_proj", "v_proj"],
                 r=8,
                 lora_alpha=32,
                 lora_dropout=0.1,
