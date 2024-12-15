@@ -147,7 +147,7 @@ class LocalDataProcessor:
             print(f"Error loading model: {e}")
             raise
 
-    def train_model(self):
+    def train_model(self, data_root=DATA_ROOT):
         """Fine-tune the model using LoRA on the training dataset"""
         print("Starting training process...")
 
@@ -167,8 +167,8 @@ class LocalDataProcessor:
         # Load training datasets
         train_datasets = []
         for task_type, filename in train_tasks:
-            annotations_file = os.path.join(DATA_ROOT, "annotations", filename)
-            dataset = DrivingDataset(annotations_file, DATA_ROOT, task_type)
+            annotations_file = os.path.join(data_root, "annotations", filename)
+            dataset = DrivingDataset(annotations_file, data_root, task_type)
             train_datasets.append(dataset)
 
         # Combine all training datasets
@@ -186,8 +186,8 @@ class LocalDataProcessor:
         # Load validation datasets
         val_datasets = []
         for task_type, filename in val_tasks:
-            annotations_file = os.path.join(DATA_ROOT, "annotations", filename)
-            dataset = DrivingDataset(annotations_file, DATA_ROOT, task_type)
+            annotations_file = os.path.join(data_root, "annotations", filename)
+            dataset = DrivingDataset(annotations_file, data_root, task_type)
             val_datasets.append(dataset)
 
         # Combine all validation datasets
@@ -338,13 +338,8 @@ def main():
         parser.add_argument('--data_root', type=str, default=DATA_ROOT, help='Path to the data root directory')
         args = parser.parse_args()
 
-        # Update the DATA_ROOT variable with the provided argument
-        global DATA_ROOT
-        DATA_ROOT = args.data_root
-
         processor = LocalDataProcessor()
-        processor.train_model()
-        # Optionally, after training, you can perform inference or other tasks
+        processor.train_model(data_root=args.data_root)
         print("\nTraining and Evaluation complete!")
     except Exception as e:
         print(f"Error in main execution: {e}")
