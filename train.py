@@ -163,7 +163,8 @@ class LocalDataProcessor:
     def collate_fn(self, batch):
         """Custom collate function to handle batching."""
         try:
-            images = torch.stack([item['image'] for item in batch])
+            # images = torch.stack([item['image'] for item in batch])
+            images = [item['image'] for item in batch]
             prompts = [item['prompt'] for item in batch]
             labels = [item['label'] for item in batch]
             
