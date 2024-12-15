@@ -153,6 +153,33 @@ class LocalDataProcessor:
             print(f"Error loading model: {e}")
             raise
 
+    def collate_fn(self, batch):
+        """Custom collate function to handle PIL images and other data types"""
+        images = [item['image'] for item in batch]
+        prompts = [item['prompt'] for item in batch]
+        labels = [item['label'] for item in batch]
+        
+        # Process the batch using the processor
+        inputs = self.processor(
+            text=prompts,
+            images=images,
+            return_tensors="pt",
+            padding=True
+        )
+        
+        # Add labels
+        label_tokens = self.processor.tokenizer(
+            labels,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=MAX_TOKEN
+        ).input_ids
+        
+        inputs['labels'] = label_tokens
+        
+        return inputs
+
     def train_model(self, data_root=DATA_ROOT):
         """Fine-tune the model using LoRA on the training dataset"""
         print("Starting training process...")
@@ -187,7 +214,8 @@ class LocalDataProcessor:
             batch_size=BATCH_SIZE, 
             shuffle=True, 
             num_workers=4, 
-            pin_memory=True
+            pin_memory=True,
+            collate_fn=self.collate_fn
         )
 
         # Load validation datasets
@@ -206,7 +234,8 @@ class LocalDataProcessor:
             batch_size=BATCH_SIZE, 
             shuffle=False, 
             num_workers=4, 
-            pin_memory=True
+            pin_memory=True,
+            collate_fn=self.collate_fn
         )
 
         # Optimizer and Scheduler
