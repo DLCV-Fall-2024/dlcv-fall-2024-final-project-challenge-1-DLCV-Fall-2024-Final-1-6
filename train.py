@@ -231,7 +231,8 @@ class LocalDataProcessor:
             batch_size=BATCH_SIZE, 
             shuffle=True, 
             num_workers=4, 
-            pin_memory=True
+            pin_memory=True,
+            collate_fn=self.collate_fn
         )
 
         # Load validation datasets
@@ -250,7 +251,8 @@ class LocalDataProcessor:
             batch_size=BATCH_SIZE, 
             shuffle=False, 
             num_workers=4, 
-            pin_memory=True
+            pin_memory=True,
+            collate_fn=self.collate_fn
         )
 
         # Optimizer and Scheduler
