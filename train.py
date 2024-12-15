@@ -52,7 +52,11 @@ class DrivingDataset(Dataset):
         """
         sample = self.samples[idx]
         image_path = sample['image']
-        image_path = os.path.join(self.root_dir, image_path)
+        # Modify for using Kaggle dataset
+        # if the root_dir is data or data/, then the image_path is the image path
+        if self.root_dir.endswith('data') or self.root_dir.endswith('data/'):
+            image_path = os.path.join(os.path.dirname(self.root_dir), image_path)
+
         image = Image.open(image_path).convert("RGB")
         conversations = sample['conversations']
         
