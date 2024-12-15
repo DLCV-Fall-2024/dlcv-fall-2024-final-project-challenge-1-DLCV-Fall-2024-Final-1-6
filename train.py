@@ -60,7 +60,6 @@ class DrivingDataset(Dataset):
         if self.root_dir.endswith('data') or self.root_dir.endswith('data/'):
             image_path = os.path.join(os.path.dirname(self.root_dir), image_path)
 
-        # image = np.array(Image.open(image_path).convert("RGB"))
         image = Image.open(image_path).convert("RGB")
         if self.transform:
             image = self.transform(image)
@@ -133,7 +132,7 @@ class LocalDataProcessor:
             self.model = LlavaNextForConditionalGeneration.from_pretrained(
                 MODEL_ID,
                 torch_dtype=torch.float16,
-                device_map="auto",
+                device_map="cuda:0",
                 low_cpu_mem_usage=True
             )
 
@@ -201,14 +200,14 @@ class LocalDataProcessor:
         # Prepare datasets for all three tasks
         train_tasks = [
             ("general", "train_general_perception.jsonl"),
-            # ("region", "train_region_perception.jsonl"),
-            # ("driving", "train_driving_suggestion.jsonl")
+            ("region", "train_region_perception.jsonl"),
+            ("driving", "train_driving_suggestion.jsonl")
         ]
 
         val_tasks = [
             ("general", "val_general_perception.jsonl"),
-            # ("region", "val_region_perception.jsonl"),
-            # ("driving", "val_driving_suggestion.jsonl")
+            ("region", "val_region_perception.jsonl"),
+            ("driving", "val_driving_suggestion.jsonl")
         ]
 
         transform = transforms.Compose([
@@ -231,7 +230,7 @@ class LocalDataProcessor:
             combined_train_dataset, 
             batch_size=BATCH_SIZE, 
             shuffle=True, 
-            num_workers=0, 
+            num_workers=4, 
             pin_memory=True,
             collate_fn=self.collate_fn
         )
@@ -251,7 +250,7 @@ class LocalDataProcessor:
             combined_val_dataset, 
             batch_size=BATCH_SIZE, 
             shuffle=False, 
-            num_workers=0, 
+            num_workers=4, 
             pin_memory=True,
             collate_fn=self.collate_fn
         )
@@ -273,28 +272,6 @@ class LocalDataProcessor:
 
             for step, batch in enumerate(progress_bar):
                 try:
-                    # images = batch['image']
-                    # prompts = batch['prompt']
-                    # labels = batch['label']
-
-                    # # Preprocess images and prompts
-                    # inputs = self.processor(
-                    #     text=prompts,
-                    #     images=images,
-                    #     return_tensors="pt",
-                    #     padding=True
-                    # ).to(self.device)
-
-                    # # Tokenize labels
-                    # labels_tokenized = self.processor.tokenizer(
-                    #     labels,
-                    #     return_tensors="pt",
-                    #     padding=True,
-                    #     truncation=True,
-                    #     max_length=MAX_TOKEN
-                    # ).input_ids.to(self.device)
-
-                    # inputs['labels'] = labels_tokenized
                     batch = {k: v.to(self.device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
                     outputs = self.model(**batch)
                     loss = outputs.loss
@@ -338,30 +315,8 @@ class LocalDataProcessor:
         with torch.no_grad():
             for batch in tqdm(val_loader, desc="Evaluating", leave=False):
                 try:
-                    images = batch['image']
-                    prompts = batch['prompt']
-                    labels = batch['label']
-
-                    # Preprocess images and prompts
-                    inputs = self.processor(
-                        text=prompts,
-                        images=images,
-                        return_tensors="pt",
-                        padding=True
-                    ).to(self.device)
-
-                    # Tokenize labels
-                    labels_tokenized = self.processor.tokenizer(
-                        labels,
-                        return_tensors="pt",
-                        padding=True,
-                        truncation=True,
-                        max_length=MAX_TOKEN
-                    ).input_ids.to(self.device)
-
-                    inputs['labels'] = labels_tokenized
-
-                    outputs = self.model(**inputs)
+                    batch = {k: v.to(self.device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
+                    outputs = self.model(**batch)
                     loss = outputs.loss
                     total_val_loss += loss.item()
 
