@@ -201,14 +201,14 @@ class LocalDataProcessor:
         # Prepare datasets for all three tasks
         train_tasks = [
             ("general", "train_general_perception.jsonl"),
-            ("region", "train_region_perception.jsonl"),
-            ("driving", "train_driving_suggestion.jsonl")
+            # ("region", "train_region_perception.jsonl"),
+            # ("driving", "train_driving_suggestion.jsonl")
         ]
 
         val_tasks = [
             ("general", "val_general_perception.jsonl"),
-            ("region", "val_region_perception.jsonl"),
-            ("driving", "val_driving_suggestion.jsonl")
+            # ("region", "val_region_perception.jsonl"),
+            # ("driving", "val_driving_suggestion.jsonl")
         ]
 
         transform = transforms.Compose([
