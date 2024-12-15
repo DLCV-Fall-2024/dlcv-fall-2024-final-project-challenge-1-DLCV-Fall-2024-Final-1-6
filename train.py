@@ -212,7 +212,7 @@ class LocalDataProcessor:
         ]
 
         transform = transforms.Compose([
-            transforms.Resize((512, 512)),  # Resize all images to a fixed size
+            # transforms.Resize((720, 1280)),  # Resize all images to a fixed size
             # transforms.ToTensor(),
         ])
 
@@ -231,7 +231,7 @@ class LocalDataProcessor:
             combined_train_dataset, 
             batch_size=BATCH_SIZE, 
             shuffle=True, 
-            num_workers=4, 
+            num_workers=0, 
             pin_memory=True,
             collate_fn=self.collate_fn
         )
@@ -251,7 +251,7 @@ class LocalDataProcessor:
             combined_val_dataset, 
             batch_size=BATCH_SIZE, 
             shuffle=False, 
-            num_workers=4, 
+            num_workers=0, 
             pin_memory=True,
             collate_fn=self.collate_fn
         )
