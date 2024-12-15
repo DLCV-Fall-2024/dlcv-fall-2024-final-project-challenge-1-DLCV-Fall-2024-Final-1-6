@@ -151,6 +151,7 @@ class LocalDataProcessor:
     def train_model(self, data_root=DATA_ROOT):
         """Fine-tune the model using LoRA on the training dataset"""
         print("Starting training process...")
+        print(f"Using data root: {data_root}")
 
         # Prepare datasets for all three tasks
         train_tasks = [
