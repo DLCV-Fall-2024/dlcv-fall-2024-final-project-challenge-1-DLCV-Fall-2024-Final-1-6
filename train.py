@@ -295,7 +295,7 @@ class LocalDataProcessor:
                     # ).input_ids.to(self.device)
 
                     # inputs['labels'] = labels_tokenized
-
+                    batch = {k: v.to(self.device) for k, v in batch.items() if isinstance(v, torch.Tensor)}
                     outputs = self.model(**batch)
                     loss = outputs.loss
                     loss.backward()
@@ -348,7 +348,7 @@ class LocalDataProcessor:
                         images=images,
                         return_tensors="pt",
                         padding=True
-                    ).to(self.device)
+                    )
 
                     # Tokenize labels
                     labels_tokenized = self.processor.tokenizer(
@@ -357,7 +357,7 @@ class LocalDataProcessor:
                         padding=True,
                         truncation=True,
                         max_length=MAX_TOKEN
-                    ).input_ids.to(self.device)
+                    ).input_ids
 
                     inputs['labels'] = labels_tokenized
 
