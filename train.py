@@ -60,7 +60,10 @@ class DrivingDataset(Dataset):
         if self.root_dir.endswith('data') or self.root_dir.endswith('data/'):
             image_path = os.path.join(os.path.dirname(self.root_dir), image_path)
 
-        image = np.array(Image.open(image_path).convert("RGB"))
+        # image = np.array(Image.open(image_path).convert("RGB"))
+        image = Image.open(image_path).convert("RGB")
+        if self.transform:
+            image = self.transform(image)
         
         conversations = sample['conversations']
         
@@ -157,6 +160,37 @@ class LocalDataProcessor:
             print(f"Error loading model: {e}")
             raise
 
+    def collate_fn(self, batch):
+        """Custom collate function to handle batching."""
+        try:
+            images = torch.stack([item['image'] for item in batch])
+            prompts = [item['prompt'] for item in batch]
+            labels = [item['label'] for item in batch]
+            
+            # Tokenize prompts with images
+            inputs = self.processor(
+                text=prompts,
+                images=images,
+                return_tensors="pt",
+                padding=True
+            ).to(self.device)
+            
+            # Tokenize labels
+            label_tokens = self.processor.tokenizer(
+                labels,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=MAX_TOKEN
+            ).input_ids.to(self.device)
+            
+            inputs['labels'] = label_tokens
+            
+            return inputs
+        except Exception as e:
+            print(f"Error in collate_fn: {e}")
+            raise
+
     def train_model(self, data_root=DATA_ROOT):
         """Fine-tune the model using LoRA on the training dataset"""
         print("Starting training process...")
@@ -235,28 +269,28 @@ class LocalDataProcessor:
 
             for step, batch in enumerate(progress_bar):
                 try:
-                    images = batch['image']
-                    prompts = batch['prompt']
-                    labels = batch['label']
+                    # images = batch['image']
+                    # prompts = batch['prompt']
+                    # labels = batch['label']
 
-                    # Preprocess images and prompts
-                    inputs = self.processor(
-                        text=prompts,
-                        images=images,
-                        return_tensors="pt",
-                        padding=True
-                    ).to(self.device)
+                    # # Preprocess images and prompts
+                    # inputs = self.processor(
+                    #     text=prompts,
+                    #     images=images,
+                    #     return_tensors="pt",
+                    #     padding=True
+                    # ).to(self.device)
 
-                    # Tokenize labels
-                    labels_tokenized = self.processor.tokenizer(
-                        labels,
-                        return_tensors="pt",
-                        padding=True,
-                        truncation=True,
-                        max_length=MAX_TOKEN
-                    ).input_ids.to(self.device)
+                    # # Tokenize labels
+                    # labels_tokenized = self.processor.tokenizer(
+                    #     labels,
+                    #     return_tensors="pt",
+                    #     padding=True,
+                    #     truncation=True,
+                    #     max_length=MAX_TOKEN
+                    # ).input_ids.to(self.device)
 
-                    inputs['labels'] = labels_tokenized
+                    # inputs['labels'] = labels_tokenized
 
                     outputs = self.model(**inputs)
                     loss = outputs.loss
