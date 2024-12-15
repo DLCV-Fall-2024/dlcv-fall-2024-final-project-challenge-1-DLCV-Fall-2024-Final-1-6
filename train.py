@@ -5,6 +5,7 @@ from peft import get_peft_model, LoraConfig
 import gc
 import os
 from tqdm import tqdm
+import numpy as np
 import json
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
@@ -59,9 +60,8 @@ class DrivingDataset(Dataset):
         if self.root_dir.endswith('data') or self.root_dir.endswith('data/'):
             image_path = os.path.join(os.path.dirname(self.root_dir), image_path)
 
-        image = Image.open(image_path).convert("RGB")
-        if self.transform:
-            image = self.transform(image)
+        image = np.array(Image.open(image_path).convert("RGB"))
+        
         conversations = sample['conversations']
         
         # Extract the GPT response as label
