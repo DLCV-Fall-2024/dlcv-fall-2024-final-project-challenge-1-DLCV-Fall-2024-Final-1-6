@@ -27,12 +27,13 @@ torch.cuda.set_per_process_memory_fraction(0.95)
 torch.backends.cuda.matmul.allow_tf32 = True
 
 class DrivingDataset(Dataset):
-    def __init__(self, annotations_file, root_dir, task_type):
+    def __init__(self, annotations_file, root_dir, task_type, transform=None):
         """
         Initializes the dataset by loading the annotations.
         """
         self.root_dir = root_dir
         self.task_type = task_type
+        self.transform = transform
         self.samples = []
         
         try:
@@ -58,6 +59,8 @@ class DrivingDataset(Dataset):
             image_path = os.path.join(os.path.dirname(self.root_dir), image_path)
 
         image = Image.open(image_path).convert("RGB")
+        if self.transform:
+            image = self.transform(image)
         conversations = sample['conversations']
         
         # Extract the GPT response as label
@@ -153,33 +156,6 @@ class LocalDataProcessor:
             print(f"Error loading model: {e}")
             raise
 
-    def collate_fn(self, batch):
-        """Custom collate function to handle PIL images and other data types"""
-        images = [item['image'] for item in batch]
-        prompts = [item['prompt'] for item in batch]
-        labels = [item['label'] for item in batch]
-        
-        # Process the batch using the processor
-        inputs = self.processor(
-            text=prompts,
-            images=images,
-            return_tensors="pt",
-            padding=True
-        )
-        
-        # Add labels
-        label_tokens = self.processor.tokenizer(
-            labels,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=MAX_TOKEN
-        ).input_ids
-        
-        inputs['labels'] = label_tokens
-        
-        return inputs
-
     def train_model(self, data_root=DATA_ROOT):
         """Fine-tune the model using LoRA on the training dataset"""
         print("Starting training process...")
@@ -198,11 +174,17 @@ class LocalDataProcessor:
             ("driving", "val_driving_suggestion.jsonl")
         ]
 
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
         # Load training datasets
         train_datasets = []
         for task_type, filename in train_tasks:
             annotations_file = os.path.join(data_root, "annotations", filename)
-            dataset = DrivingDataset(annotations_file, data_root, task_type)
+            dataset = DrivingDataset(annotations_file, data_root, task_type, transform=transform)
             train_datasets.append(dataset)
 
         # Combine all training datasets
@@ -214,15 +196,14 @@ class LocalDataProcessor:
             batch_size=BATCH_SIZE, 
             shuffle=True, 
             num_workers=4, 
-            pin_memory=True,
-            collate_fn=self.collate_fn
+            pin_memory=True
         )
 
         # Load validation datasets
         val_datasets = []
         for task_type, filename in val_tasks:
             annotations_file = os.path.join(data_root, "annotations", filename)
-            dataset = DrivingDataset(annotations_file, data_root, task_type)
+            dataset = DrivingDataset(annotations_file, data_root, task_type, transform=transform)
             val_datasets.append(dataset)
 
         # Combine all validation datasets
@@ -234,8 +215,7 @@ class LocalDataProcessor:
             batch_size=BATCH_SIZE, 
             shuffle=False, 
             num_workers=4, 
-            pin_memory=True,
-            collate_fn=self.collate_fn
+            pin_memory=True
         )
 
         # Optimizer and Scheduler
