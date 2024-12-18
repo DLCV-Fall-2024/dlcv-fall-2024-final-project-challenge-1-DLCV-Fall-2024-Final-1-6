@@ -26,7 +26,7 @@ BATCH_SIZE = 1
 EPOCHS = 3
 LEARNING_RATE = 2e-5
 WARMUP_STEPS = 500
-SAVE_INTERVAL = 100
+SAVE_INTERVAL = 1000
 
 # Set GPU memory settings
 torch.cuda.set_per_process_memory_fraction(0.95)
