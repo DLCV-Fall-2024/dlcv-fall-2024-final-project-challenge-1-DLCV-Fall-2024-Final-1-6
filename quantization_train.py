@@ -17,12 +17,12 @@ GRADIENT_ACCUMULATION_STEPS = 4
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 os.environ["TORCH_USE_CUDA_DSA"] = "1"
 # Configuration
-MAX_TOKEN = 1000
+MAX_TOKEN = 100
 OUTPUT_DIR = "fine_tuned_results"
 MODEL_ID = "llava-hf/llava-v1.6-vicuna-7b-hf"
 DATA_ROOT = "data"
 DEBUG = False
-BATCH_SIZE = 1
+BATCH_SIZE = 5
 EPOCHS = 3
 LEARNING_RATE = 2e-5
 WARMUP_STEPS = 500

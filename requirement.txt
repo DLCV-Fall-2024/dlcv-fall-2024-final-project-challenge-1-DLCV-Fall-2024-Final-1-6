@@ -11,6 +11,7 @@ plotly>=5.13.0
 
 # Deep learning frameworks
 torch>=2.0.0
+torchvision
 tensorflow>=2.13.0
 
 # Hugging Face libraries

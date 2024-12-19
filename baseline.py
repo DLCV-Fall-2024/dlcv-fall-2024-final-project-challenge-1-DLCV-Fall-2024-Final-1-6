@@ -8,7 +8,7 @@ from PIL import Image
 import time
 
 # Configuration
-MAX_TOKEN = 1000
+MAX_TOKEN = 100
 OUTPUT_DIR = "baseline_results"
 MODEL_ID = "llava-hf/llava-v1.6-vicuna-7b-hf"
 DATA_ROOT = "data"
@@ -85,7 +85,7 @@ class LocalDataProcessor:
                 "traffic signs (no parking, warning, directional, etc.), traffic lights (red, green, yellow), "
                 "traffic cones, barriers, miscellaneous(debris, dustbin, animals, etc.). You must not "
                 "discuss any objects beyond the seven categories above. Please describe each object's "
-                "color, position, status, implication, respones, and how they influence ego car. EXPERT:"
+                "color, position, status, implication, responses, and how they influence ego car. EXPERT:"
             ),
             "region": (
                 "A chat between a curious human and an autonomous driving expert, specializing in "
