@@ -6,10 +6,11 @@ from PIL import Image
 from tqdm import tqdm
 import os 
 from transformers import CLIPProcessor, CLIPVisionModelWithProjection
+import json
 from scipy.optimize import linear_sum_assignment
 
 class ImageRetrieval:
-    def __init__(self, yolo_model="yolo11x_1216.pt", clip_model="openai/clip-vit-base-patch32", max_objects=5):
+    def __init__(self, yolo_model="yolo11x.pt", clip_model="openai/clip-vit-base-patch32", max_objects=5, golden_json="golden.json", mapping_json="train_idmap.json"):
         # Initialize models
         self.yolo = YOLO(yolo_model)
         self.clip_model = CLIPVisionModelWithProjection.from_pretrained(clip_model)
@@ -18,6 +19,21 @@ class ImageRetrieval:
         self.clip_model.to(self.device)
         self.max_objects = max_objects
         
+        with open(golden_json, "r") as f:
+            self.golden = json.load(f)
+        with open(mapping_json, "r") as f:
+            self.mapping = json.load(f)
+
+        self.rev_mapping = {}
+    
+        # Iterate through the original dictionary
+        for key, value in self.mapping.items():
+            # If the value is not in the new dict, create a new list
+            if value not in self.rev_mapping:
+                self.rev_mapping[value] = []
+            # Append the original key to the list
+            self.rev_mapping[value].append(key)
+        
         # Initialize feature banks
         self.feature_banks = {
             'general': [],
@@ -25,6 +41,11 @@ class ImageRetrieval:
             'suggestion': []
         }
         self.image_ids = {
+            'general': [],
+            'regional': [],
+            'suggestion': []
+        }
+        self.image_captions = {
             'general': [],
             'regional': [],
             'suggestion': []
@@ -74,17 +95,18 @@ class ImageRetrieval:
         all_features = np.concatenate([features[0]] + object_features)
         return all_features
 
-    def build_all_indices(self, dataset_path="ntudlcv/dlcv_2024_final1", split="train", sample_size=300):
+    def build_all_indices(self, dataset_path="ntudlcv/dlcv_2024_final1", split="train", sample_size=2000):
         dataset = load_dataset(dataset_path, split=split)
         indices = np.random.permutation(len(dataset))[:sample_size]
         sampled_dataset = [dataset[int(i)] for i in indices]
         
-        print(f"Building image lookup dictionary for {sample_size} images...")
-        self.image_lookup = {item['id']: item['image'] for item in sampled_dataset}
+        # print(f"Building image lookup dictionary for {sample_size} images...")
+        # self.image_lookup = {item['id']: item for item in sampled_dataset}
         
         for category in ['general', 'regional', 'suggestion']:
             self.feature_banks[category] = []
             self.image_ids[category] = []
+            self.image_captions[category] = []
         
         for item in tqdm(sampled_dataset, desc="Building indices for all categories"):
             image_id = item['id']
@@ -92,10 +114,10 @@ class ImageRetrieval:
             
             if 'Train_general' in image_id:
                 category = 'general'
-            elif 'Train_regional' in image_id:
-                category = 'regional'
-            elif 'Train_suggestion' in image_id:
-                category = 'suggestion'
+            # elif 'Train_regional' in image_id:
+            #     category = 'regional'
+            # elif 'Train_suggestion' in image_id:
+            #     category = 'suggestion'
             else:
                 continue
             
@@ -104,25 +126,37 @@ class ImageRetrieval:
             if len(features) > 0:
                 self.feature_banks[category].append(features)
                 self.image_ids[category].append(image_id)
+                self.image_captions[category].append(item['conversations'][1]['value'])
         
         for category in self.feature_banks:
             if self.feature_banks[category]:
                 self.feature_banks[category] = np.array(self.feature_banks[category])
 
-    def retrieve(self, query_image, k=5, category=None):
+    def retrieve(self, query_id, query_image, k=5, category=None):
         query_features = self.extract_features(query_image)
         
         if len(query_features) == 0:
             return []
+
+        results = self._retrieve_from_category(query_features, "general", k)
+
+        select = 0
+        if query_id in self.golden.keys():
+            if query_id.replace("suggestion", "general") == results[0]:
+                select = 1 # Train data, general or suggestion
+            elif "regional" in query_id and query_id in self.rev_mapping[results[0]]:
+                select = 1 # Train data, regional
+
+        result_id = results[select]
         
-        if category is not None:
-            return self._retrieve_from_category(query_features, category, k)
+        if "suggestion" in query_id:
+            caption = self.golden[result_id.replace("general", "suggestion")]
+        elif "regional" in query_id:
+            caption = self.golden[self.rev_mapping[result_id][0]]
         else:
-            all_results = []
-            for cat in ['general', 'regional', 'suggestion']:
-                results = self._retrieve_from_category(query_features, cat, k)
-                all_results.extend(results)
-            return all_results[:k]
+            caption = self.golden[result_id]
+            
+        return result_id, caption
     
     def _retrieve_from_category(self, query_features, category, k):
         if self.feature_banks[category] is None or len(self.feature_banks[category]) == 0:
@@ -175,7 +209,7 @@ def main():
     retriever = ImageRetrieval(max_objects=5)
     
     # 載入測試資料
-    dataset = load_dataset("ntudlcv/dlcv_2024_final1", split="test")
+    dataset = load_dataset("ntudlcv/dlcv_2024_final1", split="train")
     test_index = 5
     test_image = dataset[test_index]['image']
     test_id = dataset[test_index]['id']
@@ -186,8 +220,9 @@ def main():
     test_image.save(os.path.join(str(test_id), 'test_image.jpg'))
     
     # 檢索相似圖片
-    general_results = retriever.retrieve(test_image, k=5, category="general")
-    print("Similar general image IDs:", general_results)
+    general_results = retriever.retrieve(test_image, k=2, category="general")
+    result = general_results[0] if (general_results[0][0] != test_id) else general_results[1]
+    print("Similar general image IDs:", result)
     
     # 儲存結果
     # for i, img_id in enumerate(general_results):
@@ -198,3 +233,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # pass
