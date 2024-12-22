@@ -96,7 +96,11 @@ class ImageRetrieval:
         return all_features
 
     def build_all_indices(self, dataset_path="ntudlcv/dlcv_2024_final1", split="train", sample_size=2000):
-        dataset = load_dataset(dataset_path, split=split)
+        dataset = load_dataset(dataset_path, 
+                                cache_dir="./cache",           
+                                download_mode="reuse_cache_if_exists",  # Correct value
+                                num_proc=4,
+                                split=split)
         indices = np.random.permutation(len(dataset))[:sample_size]
         sampled_dataset = [dataset[int(i)] for i in indices]
         
