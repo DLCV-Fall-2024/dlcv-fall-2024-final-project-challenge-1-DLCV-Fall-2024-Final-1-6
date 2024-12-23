@@ -1,9 +1,5 @@
-from LLaVA.llava.model.builder import load_pretrained_model
-from LLaVA.llava.utils import disable_torch_init
-from LLaVA.llava.mm_utils import tokenizer_image_token, process_images, get_model_name_from_path
 import os
 from PIL import Image
-from datasets import load_dataset
 import torch
 import faiss
 
