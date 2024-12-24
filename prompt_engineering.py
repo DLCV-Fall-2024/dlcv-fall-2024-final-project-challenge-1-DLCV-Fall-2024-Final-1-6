@@ -37,8 +37,6 @@ def eval_model(args):
     with open(args.question_file, 'r') as f:
         questions = json.load(f)
     
-    with open(args.llava_results, 'r') as f:
-        first_llava_results = json.load(f)
     questions = get_chunk(questions, args.num_chunks, args.chunk_idx)
     answers_file = os.path.expanduser(args.answers_file)
     os.makedirs(os.path.dirname(answers_file), exist_ok=True)
@@ -50,7 +48,8 @@ def eval_model(args):
         image_file = f"{line['id']}.png"
         qs = line["conversations"][0]["value"].replace("<image>", "")
         cur_prompt = qs
-        qs = "\n\n Now you are an excellent ego car, based on the image, you will be given a question and a response. \n You need to finetune and output the response.\n" + f"* Question\n{qs} \n" + "* Response\n\"" + first_llava_results[idx] + "\"\n Your answer"
+        # qs = "\n\nYou are an experienced car driver, enable to point out all detail need to be focused while driving. An image from the driver's seat of a ego car is given, correspond to a question and a response. You need to answer the question with your analysis from image. If nothing is captured, take response as auxiliary information to answer the question.\n" + f"* Question\n{qs} \n" + "* Response\n\"" + first_llava_results[idx] + "\"\n Your answer"
+        qs = "\n\nYou are an experienced car driver, enable to point out all detail need to be focused while driving. An image from the driver's seat of a ego car is given, correspond to a question and a response. You need to answer the question with your analysis from image.\n" + f"* Question\n{qs} \n" + "\"\n Your answer"
         if model.config.mm_use_im_start_end:
             qs = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + qs
         else:
@@ -105,7 +104,6 @@ if __name__ == "__main__":
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--image-folder", type=str, default="")
     parser.add_argument("--question-file", type=str, default="tables/question.jsonl")
-    parser.add_argument("--llava-results", type=str, default="results.jsonl")
     parser.add_argument("--answers-file", type=str, default="answer.jsonl")
     parser.add_argument("--conv-mode", type=str, default="llava_v1")
     parser.add_argument("--num-chunks", type=int, default=1)
