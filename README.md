@@ -1,14 +1,182 @@
 # DLCV Final Project
 
 # How to run your code?
-* TODO: Please provide the scripts for TAs to reproduce your results, including training and inference. For example, 
+## Environment Setup
+
+Create two separated environments:
+```
+conda create -n DARTS_preprocess python=3.10
+conda activate DARTS_preprocess
+pip install -r requirement.txt
+conda deactivate
+
+conda create -n DARTS_inference python=3.10
+conda activate DARTS_inference
+git clone https://github.com/haotian-liu/LLaVA.git
+pip install -r requirement.txt
+pip install -e LLaVA
+pip install peft==0.10.0 protobuf
+conda deactivate
+```
+
+Also, clone both checkpoints: (it uses gdown so please install it first)
+```
+bash download_ckpt.sh
+```
+## Inferencing
+For inferencing, please go through the following guide about [Stage 1](#stage-1) and [Stage 2](#stage-2).
+
+## Training
+
+For training, substitute training code in preprocessing data. Then, go to LLaVA folder and execute this addtional setup:
+```
+conda activate DARTS_
+pip install -e ".[train]"
+pip install flash-attn --no-build-isolation
+```
+
+Finally, execute the training script.
+
+For Stage 1, our hyperparameters are:
+```
+deepspeed llava/train/train_mem.py \
+    --lora_enable True --lora_r 64 --lora_alpha 128\
+    --deepspeed ./scripts/zero3.json \
+    --model_name_or_path  liuhaotian/llava-v1.5-7b \
+    --version v1 \
+    --data_path data/stage1_cache/processed_data.json \
+    --image_folder data/stage1_cache \
+    --vision_tower openai/clip-vit-large-patch14 \
+    --mm_vision_select_layer -2 \
+    --mm_use_im_start_end False \
+    --mm_use_im_patch_token False \
+    --bf16 True \
+    --output_dir ckpt/stage1_finetuned_ckpt \
+    --num_train_epochs 2 \ 
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 1 \
+    --gradient_accumulation_steps 2 \
+    --evaluation_strategy "no" \
+    --save_strategy "steps" \
+    --save_steps 200 \
+    --save_total_limit 4 \
+    --learning_rate 2e-5 \
+    --weight_decay 0. \
+    --warmup_ratio 0.03 \
+    --lr_scheduler_type "cosine" \
+    --logging_steps 100 \
+    --tf32 True \
+    --model_max_length 2048 \
+    --gradient_checkpointing True \
+    --lazy_preprocess True \
+    --dataloader_num_workers 4 \
+    --report_to wandb
+```
+
+For Stage 2, our hyperparameters are:
+```
+deepspeed llava/train/train_mem.py \
+    --lora_enable True --lora_r 16 --lora_alpha 64\
+    --deepspeed ./scripts/zero3.json \
+    --model_name_or_path  liuhaotian/llava-v1.5-7b \
+    --version v1 \
+    --data_path data/stage2_cache/processed_data.json \
+    --image_folder data/stage2_cache \
+    --vision_tower openai/clip-vit-large-patch14 \
+    --mm_vision_select_layer -2 \
+    --mm_use_im_start_end False \
+    --mm_use_im_patch_token False \
+    --bf16 True \
+    --output_dir ckpt/stage2_finetuned_ckpt \
+    --num_train_epochs 2 \ 
+    --per_device_train_batch_size 8 \
+    --per_device_eval_batch_size 1 \
+    --gradient_accumulation_steps 2 \
+    --evaluation_strategy "no" \
+    --save_strategy "steps" \
+    --save_steps 200 \
+    --save_total_limit 4 \
+    --learning_rate 2e-5 \
+    --weight_decay 0. \
+    --warmup_ratio 0.03 \
+    --lr_scheduler_type "cosine" \
+    --logging_steps 100 \
+    --tf32 True \
+    --model_max_length 2048 \
+    --gradient_checkpointing True \
+    --lazy_preprocess True \
+    --dataloader_num_workers 4 \
+    --report_to wandb
+```
+
+We train our models on single A100 in Google Colab.
+
+## Stage 1
+
+### Preprocess
+
+Change to DARTS_preprocess in stage 1 preprocessing.
+```
+conda activate DARTS_preprocess
+```
+
+If OpenGL error encountered, please install this:
+```
+sudo apt-get update
+sudo apt-get install libgl1-mesa-glx
+```
+
+Then, start preprocessing data.
 
 ```
-bash train.sh <Path to gt image folder> <Path to annot file>
-bash inference.sh <Path to gt image folder> <Path to annot file> <Path to predicted file>
+python3 scripts/stage1_data.py \
+    --dataset_name ntudlcv/dlcv_2024_final1 \
+    --split test \
+    --yolo_checkpoint ckpt/yolo11x.pt \
+    --output_dir data/stage1_cache \
+    --save_images --skip_duplicates 
 ```
 
-You can add more arguments to the script if you need.
+### Inference
+
+Change to DARTS_inference for rest of the process.
+```
+conda activate DARTS_inference
+```
+Then, start inferencing data.
+```
+python3 scripts/inference.py \
+    --lora_path ckpt/stage1_ckpt \
+    --data_dir data/stage1_cache \
+    --input_json data/stage1_cache/processed_data.json \
+    --output_json data/stage1_response.json
+```
+
+## Stage 2
+
+### Preprocess
+
+```
+python3 scripts/stage2_data.py \
+    --dataset_name ntudlcv/dlcv_2024_final1 \
+    --split test \
+    --yolo_model ckpt/yolo11x.pt \
+    --golden_json mapping/golden.json \
+    --mapping_json mapping/train_idmap.json \
+    --output_dir data/stage2_cache \
+    --save_images \
+    --test_idmap mapping/test_idmap.json \
+    --responses_file data/stage1_response.json
+```
+
+### Inference
+```
+python3 scripts/inference.py \
+    --lora_path ckpt/stage2_ckpt \
+    --data_dir data/stage2_cache \
+    --input_json data/stage2_cache/processed_data.json \
+    --output_json submission.json
+```
 
 # Usage
 To start working on this final project, you should clone this repository into your local machine by the following command:

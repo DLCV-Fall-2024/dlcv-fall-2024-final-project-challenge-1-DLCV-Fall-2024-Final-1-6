@@ -60,7 +60,7 @@ def main():
             responses = json.load(f)
         print(f"Loaded {len(responses)} existing responses from {responses_file}")
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"No valid existing responses file found ({e}), starting with empty responses")
+        print(f"No valid existing responses file found, starting with empty responses")
         responses = {}
 
     with open(args.input_json) as f:

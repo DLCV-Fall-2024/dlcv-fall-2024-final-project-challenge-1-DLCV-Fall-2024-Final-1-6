@@ -8,7 +8,7 @@ import os
 import argparse
 from datasets import load_dataset
 from ultralytics import YOLO
-from scripts.stage1_utils import generate_3d_spatial_graph
+from stage1_utils import generate_3d_spatial_graph
 from transformers import pipeline
 
 

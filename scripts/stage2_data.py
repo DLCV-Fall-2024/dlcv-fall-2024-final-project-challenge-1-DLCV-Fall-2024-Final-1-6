@@ -98,7 +98,7 @@ def process_dataset(dataset, retriever, args, test=True):
         image_filename = os.path.join("images", f"image_{idx}.jpg")
         
         if args.save_images:
-            image.save(os.path.join(args.output_dir, "images", image_filename))
+            image.save(os.path.join(args.output_dir, image_filename))
         
         # Get similar images using retriever
         similar_ids, ref_caption = retriever.retrieve(item["id"], image, k=2, category="general")
