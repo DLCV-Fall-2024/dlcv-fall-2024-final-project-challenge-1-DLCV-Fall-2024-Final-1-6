@@ -8,3 +8,9 @@ val/
 *.ipynb
 .txt
 !few_shot/**/*.json
+.DS_Store
+checkpoints
+llava.egg-info/
+__pycache__/
+wandb/
+weights/*.pt

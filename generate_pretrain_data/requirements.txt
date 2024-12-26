@@ -1,0 +1,5 @@
+transformers
+ultralytics
+opencv-python
+datasets
+inflect
