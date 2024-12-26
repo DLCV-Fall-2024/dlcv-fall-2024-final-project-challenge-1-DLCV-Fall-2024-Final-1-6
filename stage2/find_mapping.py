@@ -31,8 +31,8 @@ def reorder_dataset(dataset):
 
 
 def compute_similarity(img1, img2) -> float:
-    arr1 = np.array(img1)
-    arr2 = np.array(img2)
+    arr1 = np.array(img1, dtype=np.float32)
+    arr2 = np.array(img2, dtype=np.float32)
 
     if arr1.shape != arr2.shape:
         return 0.0
@@ -45,7 +45,7 @@ def create_sequential_mapping(
     dataset: Dataset,
     id_range1: Tuple[int, int],  # Range for first sequence (1,2,3,...)
     id_range2: Tuple[int, int],  # Range for second sequence (1,1,1,2,...)
-    similarity_threshold: float = 0.75,
+    similarity_threshold: float = 0.85,
 ) -> Dict[str, List[int]]:
     """
     Create mapping for sequential images where multiple ids in range2
